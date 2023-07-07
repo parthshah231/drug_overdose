@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     # merged_df.plot(
     #     column=var,
-    #     cmap="Blues",
+    #     cmap="YlOrRd",
     #     linewidth=0.8,
     #     ax=ax,
     #     edgecolor="0.8",
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     # merged_df.plot(
     #     column=var,
-    #     cmap="Blues",
+    #     cmap="YlOrRd",
     #     linewidth=0.8,
     #     ax=ax,
     #     edgecolor="0.8",
@@ -169,7 +169,7 @@ if __name__ == "__main__":
 
     # merged_df.plot(
     #     column=var,
-    #     cmap="Blues",
+    #     cmap="YlOrRd",
     #     linewidth=0.8,
     #     ax=ax,
     #     edgecolor="0.8",
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     #     merged_df.plot(
     #         y,
     #         scheme="UserDefined",
-    #         cmap="Blues",
+    #         cmap="YlOrRd",
     #         edgecolor="0.8",
     #         classification_kwds={"bins": pooled.global_classifier.bins},
     #         legend=True,
