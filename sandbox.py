@@ -11,6 +11,7 @@ import geoplot.crs as gcrs
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from pysal.explore import esda
 from pysal.lib import weights
 
 from constants import DATA
@@ -22,33 +23,33 @@ if __name__ == "__main__":
 
     # print(df.info())
 
-    sub_df = df.rename(
-        columns={
-            "2019 Age-adjusted Rate (per 100,000 population)": "2019",
-            "2018 Age-adjusted Rate (per 100,000 population)": "2018",
-            "2017 Age-adjusted Rate (per 100,000 population)": "2017",
-            "2016 Age-adjusted Rate (per 100,000 population)": "2016",
-            "2015 Age-adjusted Rate (per 100,000 population)": "2015",
-            "2014 Age-adjusted Rate (per 100,000 population)": "2014",
-            "2013 Age-adjusted Rate (per 100,000 population)": "2013",
-        }
-    )
+    # sub_df = df.rename(
+    #     columns={
+    #         "2019 Age-adjusted Rate (per 100,000 population)": "2019",
+    #         "2018 Age-adjusted Rate (per 100,000 population)": "2018",
+    #         "2017 Age-adjusted Rate (per 100,000 population)": "2017",
+    #         "2016 Age-adjusted Rate (per 100,000 population)": "2016",
+    #         "2015 Age-adjusted Rate (per 100,000 population)": "2015",
+    #         "2014 Age-adjusted Rate (per 100,000 population)": "2014",
+    #         "2013 Age-adjusted Rate (per 100,000 population)": "2013",
+    #     }
+    # )
 
-    pd.set_option("display.max_columns", None)
-    pd.set_option("display.max_rows", None)
+    # pd.set_option("display.max_columns", None)
+    # pd.set_option("display.max_rows", None)
 
-    sub_df = sub_df[
-        [
-            "State",
-            "2019",
-            "2018",
-            "2017",
-            "2016",
-            "2015",
-            "2014",
-            "2013",
-        ]
-    ]
+    # sub_df = sub_df[
+    #     [
+    #         "State",
+    #         "2019",
+    #         "2018",
+    #         "2017",
+    #         "2016",
+    #         "2015",
+    #         "2014",
+    #         "2013",
+    #     ]
+    # ]
 
     # This says we have some missing values
     # print(df.isna().values.any())
@@ -58,19 +59,19 @@ if __name__ == "__main__":
     # Looks like if we drop them we will be dropping District Of Columbia
     # at this state we can either fill it with mean, median, mode or
     # interpolate it.. or just drop it! Let's just drop it for now.
-    sub_df = sub_df.dropna()
+    # sub_df = sub_df.dropna()
     # print(df.shape)
 
-    sub_df = sub_df.set_index("State")
+    # sub_df = sub_df.set_index("State")
 
     # If I plot before this it is taking columns as y axis [years]
     # and we want the other way around.. so transpose
-    transposed_df = sub_df.T
+    # transposed_df = sub_df.T
     # print(df.head())
     # print(transposed_df.head())
 
     # Also, it's showing 2019..2013, let's sort it
-    transposed_df = transposed_df.sort_index()
+    # transposed_df = transposed_df.sort_index()
 
     # Enlarge the image so that the legend fits!
     # plt.figure(figsize=(15, 15))
@@ -219,3 +220,113 @@ if __name__ == "__main__":
     # deaths. We can see that the epidemic is spreading from the west coast to
     # the east coast with the neighboring states starting to have similar
     # colors, is it because of the drug trafficking?
+
+    # The data exihibits significant spatial autocorrelation meaning the states
+    # with low number of deaths are surrounded by states with low number of
+    # deaths and the states with high number of deaths are surrounded by states
+    # with high number of deaths. We can use Moran's I to test for spatial
+    # autocorrelation.
+
+    # w = weights.distance.KNN.from_dataframe(merged_df, k=8)
+    w = weights.Queen.from_dataframe(merged_df)
+    w.transform = "R"
+
+    # Calculate Spatial Lag
+    # Spatial lag is the weighted average of the values of a variable among
+    # the neighbors of a given unit. The spatial lag of a variable y is
+    # defined as: y_lag = w * y
+    merged_df["w_2013"] = weights.spatial_lag.lag_spatial(
+        w, merged_df["2013 Age-adjusted Rate (per 100,000 population)"]
+    )
+    merged_df["w_2019"] = weights.spatial_lag.lag_spatial(
+        w, merged_df["2019 Age-adjusted Rate (per 100,000 population)"]
+    )
+
+    # Standardize the variables
+    merged_df["2013 Age-adjusted Rate (per 100,000 population)_std"] = (
+        merged_df["2013 Age-adjusted Rate (per 100,000 population)"]
+        - merged_df["2013 Age-adjusted Rate (per 100,000 population)"].mean()
+    ) / merged_df["2013 Age-adjusted Rate (per 100,000 population)"].std()
+
+    merged_df["2019 Age-adjusted Rate (per 100,000 population)_std"] = (
+        merged_df["2019 Age-adjusted Rate (per 100,000 population)"]
+        - merged_df["2019 Age-adjusted Rate (per 100,000 population)"].mean()
+    ) / merged_df["2019 Age-adjusted Rate (per 100,000 population)"].std()
+
+    # Plot Spatial Lag
+    # fig, ax = plt.subplots(figsize=(12, 10))
+    # merged_df.plot(
+    #     column="w_2019",
+    #     cmap="YlOrRd",
+    #     linewidth=0.8,
+    #     ax=ax,
+    #     edgecolor="0.8",
+    #     legend=True,
+    # )
+    # ax.set_axis_off()
+    # ax.set_title(
+    #     "Spatial Lag of 2019 Age-adjusted Rate (per 100,000 population)_std",
+    #     fontdict={"fontsize": "15", "fontweight": "3"},
+    # )
+    # plt.show()
+
+    # From the spatial lag plot we can see that the states with high number of
+    # deaths are surrounded by states with high number of deaths and the states
+    # with low number of deaths are surrounded by states with low number of
+    # deaths. This is a clear indication of spatial autocorrelation.
+
+    # sns.regplot(
+    #     x="2019 Age-adjusted Rate (per 100,000 population)_std",
+    #     y="w_2019",
+    #     data=merged_df,
+    #     scatter_kws={"s": 10},
+    #     line_kws={"color": "red"},
+    # )
+    # plt.show()
+
+    lisa = esda.moran.Moran_Local(
+        merged_df["2019 Age-adjusted Rate (per 100,000 population)_std"], w
+    )
+
+    # ax = sns.kdeplot(
+    #     list(lisa.Is),
+    # )
+    # ax.set_xlabel("Local Moran's I")
+    # ax.set_ylabel("Density")
+    # plt.show()
+
+    print(pd.value_counts(lisa.q))
+    # Divides the states into 4 classes based on the local Moran's I
+    # 1. HH: High-High
+    # 2. LL: Low-Low
+    # 3. LH: Low-High
+    # 4. HL: High-Low
+
+    # Lisa Cluster Map
+    # Plot legend as 1 -> HH, 2 -> LL, 3 -> LH, 4 -> HL
+    lisa_cluster = {
+        1: "HH",
+        2: "LL",
+        3: "LH",
+        4: "HL",
+    }
+
+    # Plot the clusters
+    fig, ax = plt.subplots(figsize=(12, 10))
+    merged_df.assign(cl=lisa.q).plot(
+        column="cl",
+        categorical=True,
+        k=4,
+        cmap="RdBu",
+        linewidth=0.8,
+        ax=ax,
+        edgecolor="white",
+        legend=True,
+        legend_kwds={
+            "title": "Cluster",
+            "labels": lisa_cluster.values(),
+            "loc": "lower left",
+        },
+    )
+    ax.set_axis_off()
+    plt.show()
